@@ -19,7 +19,6 @@ jobs:
       matrix:
         scheme:
           - "Swiftfin"
-          - "Swiftfin tvOS"
 
     runs-on: macos-13
 
@@ -61,3 +60,14 @@ jobs:
             -clonedSourcePackagesDirPath PackageCache \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             BUILD_DIR=${{ github.workspace }}/xcodebuild
+            
+            cd ${{ github.workspace }}/xcodebuild/Release-iphoneos/
+            mkdir ./Payload
+            cp ./Swiftfin\ iOS.app ./Payload/Swiftfin.app
+            zip -r9 ./Swiftfin.ipa Payload
+            
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swiftfin
+          path: ${{ github.workspace }}/xcodebuild/Release-iphoneos/Swiftfin.ipa
