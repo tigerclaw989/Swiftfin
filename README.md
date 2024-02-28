@@ -1,7 +1,7 @@
 <div align="center">
   <img alt="Swiftfin" src="./Resources/primary-wide.svg">
 
-  <h1>Swiftfin</h1>
+  <h1>Swiftfin</h1>,
   <a href="https://translate.jellyfin.org/engage/swiftfin/">
     <img src="https://translate.jellyfin.org/widgets/swiftfin/-/svg-badge.svg"/>
   </a>
