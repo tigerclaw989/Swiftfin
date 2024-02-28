@@ -63,7 +63,7 @@ jobs:
             
             cd ${{ github.workspace }}/xcodebuild/Release-iphoneos/
             mkdir ./Payload
-            cp ./Swiftfin\ iOS.app ./Payload/Swiftfin.app
+            cp -r ./Swiftfin\ iOS.app ./Payload/Swiftfin.app
             zip -r9 ./Swiftfin.ipa Payload
             
       - name: Upload IPA
