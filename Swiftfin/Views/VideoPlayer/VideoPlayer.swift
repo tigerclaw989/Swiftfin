@@ -35,7 +35,7 @@ struct VideoPlayer: View {
 
         var beginningAudioOffset: Int = 0
         var beginningBrightnessValue: CGFloat = 0
-        var beginningPlaybackSpeed: Float = 0
+        var beginningPlaybackSpeed: Double = 0
         var beginningSubtitleOffset: Int = 0
         var beginningVolumeValue: Float = 0
 
@@ -98,7 +98,7 @@ struct VideoPlayer: View {
     @State
     private var isScrubbing: Bool = false
     @State
-    private var playbackSpeed: Float = 1
+    private var playbackSpeed: Double = 1
     @State
     private var subtitleOffset: Int = 0
 
@@ -133,7 +133,6 @@ struct VideoPlayer: View {
                                 {
                                     videoPlayerManager.selectNextViewModel()
                                 } else {
-                                    AppDelegate.leavePlaybackOrientation()
                                     router.dismissCoordinator()
                                 }
                             }
@@ -157,15 +156,6 @@ struct VideoPlayer: View {
                         }
 
                     VideoPlayer.Overlay()
-                        .environmentObject(splitContentViewProxy)
-                        .environmentObject(videoPlayerManager)
-                        .environmentObject(videoPlayerManager.currentProgressHandler)
-                        .environmentObject(videoPlayerManager.currentViewModel!)
-                        .environmentObject(videoPlayerManager.proxy)
-                        .environment(\.aspectFilled, $isAspectFilled)
-                        .environment(\.isPresentingOverlay, $isPresentingOverlay)
-                        .environment(\.isScrubbing, $isScrubbing)
-                        .environment(\.playbackSpeed, $playbackSpeed)
                 }
             }
             .splitContent {
@@ -192,9 +182,17 @@ struct VideoPlayer: View {
             }
             .videoPlayerKeyCommands(
                 gestureStateHandler: gestureStateHandler,
-                videoPlayerManager: videoPlayerManager,
                 updateViewProxy: updateViewProxy
             )
+            .environmentObject(splitContentViewProxy)
+            .environmentObject(videoPlayerManager)
+            .environmentObject(videoPlayerManager.currentProgressHandler)
+            .environmentObject(videoPlayerManager.currentViewModel!)
+            .environmentObject(videoPlayerManager.proxy)
+            .environment(\.aspectFilled, $isAspectFilled)
+            .environment(\.isPresentingOverlay, $isPresentingOverlay)
+            .environment(\.isScrubbing, $isScrubbing)
+            .environment(\.playbackSpeed, $playbackSpeed)
     }
 
     var body: some View {
@@ -211,6 +209,11 @@ struct VideoPlayer: View {
         .ignoresSafeArea()
         .onChange(of: audioOffset) { newValue in
             videoPlayerManager.proxy.setAudioDelay(.ticks(newValue))
+        }
+        .onChange(of: isAspectFilled) { newValue in
+            UIView.animate(withDuration: 0.2) {
+                videoPlayerManager.proxy.aspectFill(newValue ? 1 : 0)
+            }
         }
         .onChange(of: isGestureLocked) { newValue in
             if newValue {
@@ -374,7 +377,6 @@ extension VideoPlayer {
         case .none:
             return
         case .aspectFill: ()
-//            aspectFillAction(state: state, unitPoint: unitPoint, scale: <#T##CGFloat#>)
         case .gestureLock:
             guard !isPresentingOverlay else { return }
             isGestureLocked.toggle()
@@ -391,14 +393,8 @@ extension VideoPlayer {
         guard state == .began || state == .changed else { return }
         if scale > 1, !isAspectFilled {
             isAspectFilled = true
-            UIView.animate(withDuration: 0.2) {
-                videoPlayerManager.proxy.aspectFill(1)
-            }
         } else if scale < 1, isAspectFilled {
             isAspectFilled = false
-            UIView.animate(withDuration: 0.2) {
-                videoPlayerManager.proxy.aspectFill(0)
-            }
         }
     }
 
@@ -421,7 +417,7 @@ extension VideoPlayer {
             toNearest: 100
         )
 
-        updateViewProxy.present(systemName: "speaker.wave.2.fill", title: newOffset.millisecondFormat)
+        updateViewProxy.present(systemName: "speaker.wave.2.fill", title: newOffset.millisecondLabel)
         audioOffset = clamp(newOffset, min: -30000, max: 30000)
     }
 
@@ -487,7 +483,7 @@ extension VideoPlayer {
         }
 
         let newPlaybackSpeed = round(
-            gestureStateHandler.beginningPlaybackSpeed - Float(gestureStateHandler.beginningHorizontalPanUnit - point) * 2,
+            gestureStateHandler.beginningPlaybackSpeed - Double(gestureStateHandler.beginningHorizontalPanUnit - point) * 2,
             toNearest: 0.25
         )
         let clampedPlaybackSpeed = clamp(newPlaybackSpeed, min: 0.25, max: 5.0)
@@ -495,7 +491,7 @@ extension VideoPlayer {
         updateViewProxy.present(systemName: "speedometer", title: clampedPlaybackSpeed.rateLabel)
 
         playbackSpeed = clampedPlaybackSpeed
-        videoPlayerManager.proxy.setRate(.absolute(clampedPlaybackSpeed))
+        videoPlayerManager.proxy.setRate(.absolute(Float(clampedPlaybackSpeed)))
     }
 
     private func scrubAction(
@@ -545,7 +541,7 @@ extension VideoPlayer {
         )
         let clampedOffset = clamp(newOffset, min: -30000, max: 30000)
 
-        updateViewProxy.present(systemName: "captions.bubble.fill", title: clampedOffset.millisecondFormat)
+        updateViewProxy.present(systemName: "captions.bubble.fill", title: clampedOffset.millisecondLabel)
 
         subtitleOffset = clampedOffset
     }
